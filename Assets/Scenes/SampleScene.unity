@@ -12140,9 +12140,9 @@ GameObject:
   - component: {fileID: 1234342610}
   - component: {fileID: 1234342609}
   - component: {fileID: 1234342608}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Tileground
-  m_TagString: Untagged
+  m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -14523,12 +14523,9 @@ MonoBehaviour:
   wallDistCheck: 0.4
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
-  moveSpeed: 5
-  jumpForce: 20
-  coyoteTimeLimit: 0.5
-  bufferTimeLimit: 0.5
-  wallJumpForce: {x: 10, y: 15}
+    m_Bits: 8
+  isGrounded: 0
+  isWalled: 0
 --- !u!1 &2063217827
 GameObject:
   m_ObjectHideFlags: 0
