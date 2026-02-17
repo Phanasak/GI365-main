@@ -1,27 +1,26 @@
-using UnityEditor.Experimental.GraphView;
+using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
+public class A_SimplePlayer : MonoBehaviour // library สำหรับตอน gameplay
 {
-    private Rigidbody2D rigid;
-    private Animator anim;
+    private Rigidbody2D rigid; // สำหรับการเคลื่อนที่
+    private Animator anim; // สำหรับ animation
 
-    [Header("Ground and Wall Check")]
-    [SerializeField] private float groundDistCheck = 1f;
-    [SerializeField] private float wallDistCheck = 0.5f;
-    [SerializeField] private LayerMask groundLayer;
-    private bool isGrounded = false;
-    private bool isWalled = false;
+    [Header("Ground And Wall Check")]
+    [SerializeField] private float groundDistCheck = 1f; // ระยะ sensor ที่วิ่งไปชนพื้น
+    [SerializeField] private float wallDistCheck = 1f; // ระยะ sensor ที่วิ่งไปชนผนัง
+    [SerializeField] private LayerMask groundLayer; // หาเฉพาะ layer ของพื้น
+    public bool isGrounded = false; // ตรวจชนพื้น
+    public bool isWalled = false;  // ตรวจชนกำแพง
 
     [Header("Move")]
     [SerializeField] private float moveSpeed = 5f;
-    private float X_input;
-    private float Y_input;
+    private float X_input, Y_input;
     private int facing = 1;
 
     [Header("Jump")]
     [SerializeField] private float jumpForce = 20f;
+    [SerializeField] private Vector2 wallJumpForce = new Vector2(15f, 10f);
     private bool isJumping = false;
     private bool isWallJumping = false;
     private bool isWallSliding = false;
@@ -32,34 +31,31 @@ public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
     private float coyoteTime = -10000f;
     private float bufferTime = -10000f;
 
-    [SerializeField] private Vector2 wallJumpForce = new Vector2(10f, 15f);
-
-
-    private void Awake()
+    private void Awake() // ทำงานก่อนเข้ามาใน game
     {
-        rigid = GetComponent<Rigidbody2D>();
-        anim = GetComponentInChildren<Animator>();
+        rigid = GetComponent<Rigidbody2D>(); // มันอยู่ที่ gameobject นี้
+        anim = GetComponentInChildren<Animator>(); // ใช้ InChildren เพราะ Animator อยู่ที่ลูก
     }
-    private void Update()
+    private void Update() // ทำงานทุก frame
     {
-        JumpState();
-        Jump();
-        WallSlide();
-        InputVal();
-        Move();
-        Flip();
-        GroundAndWallCheck();
-        Animation();
+        JumpState(); // ตรวจสถานะว่า อยู่บนพื้น กำลังกระโดด กำลังลงพื้น หรือ wallSlide
+        Jump(); // สั่งกระโดดในแบบต่างๆ
+        WallSlide(); // สั่ง wallSlide
+        InputVal(); // ตรวจ input จากผู้เล่น
+        Move(); // สั้งเคลื่อนไหวทั้งบนพื้นและอากาศ
+        Flip(); // สั่งหันหน้าไปทางทิศการเคลื่อนที่อัดโนมัต
+        GroundAndWallCheck(); // ตรวจจับพื้นและผนัง
+        Animation(); // สั่ง animation
     }
     private void JumpState()
     {
-        if (!isGrounded && !isJumping) // takeoff
+        if (!isGrounded && !isJumping) // takeoff / fall
         {
             isJumping = true;
 
-            if (rigid.linearVelocityY <= 0f) // เริ่มนับ coyoteJump
+            if (rigid.linearVelocityY <= 0f) // fall
             {
-                coyoteTime = Time.time;
+                coyoteTime = Time.time; // เริ่มนับ coyote
             }
         }
 
@@ -71,12 +67,11 @@ public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
             canDoubleJump = false;
         }
 
-        if (isWalled) // wallSlide
+        if (isWalled) // wallSliding
         {
             isJumping = false;
             isWallJumping = false;
             canDoubleJump = false;
-
             if (isGrounded)
             {
                 isWallSliding = false;
@@ -86,7 +81,7 @@ public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
                 isWallSliding = true;
             }
         }
-        else // ยกเลิก wallSlide
+        else
         {
             isWallSliding = false;
         }
@@ -97,52 +92,52 @@ public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
         {
             if (!isWalled)
             {
-                if (isGrounded) // *** normalJump
+                if (isGrounded)
                 {
                     canDoubleJump = true;
-                    rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce);
+                    rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce); // ***normalJump
                 }
-                else // doubleJump, coyoteJump
+                else
                 {
-                    if (rigid.linearVelocityY > 0f && canDoubleJump) // *** doubleJump
+                    if (rigid.linearVelocityY > 0f && canDoubleJump)
                     {
                         canDoubleJump = false;
-                        rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce);
+                        rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce); // ***doubleJump
                     }
 
-                    if (rigid.linearVelocityY <= 0f)
+                    if (rigid.linearVelocityY < 0f)
                     {
-                        if (Time.time < coyoteTime + coyoteTimeLimit) // *** coyoteJump
+                        if (Time.time < coyoteTime + coyoteTimeLimit)
                         {
                             coyoteTime = 0f;
-                            rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce);
+                            rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce); // ***coyoteJump
                         }
-                        else // เริ่มนับ bufferJump
+                        else
                         {
-                            bufferTime = Time.time;
+                            bufferTime = Time.time; // เริ่ม bufferTime
                         }
                     }
                 }
             }
-            else // *** wallJump
+            else
             {
-                canDoubleJump = false;
                 isWallJumping = true;
                 rigid.linearVelocity = new Vector2(wallJumpForce.x * facing, wallJumpForce.y);
             }
         }
-        else // *** bufferJump
+        else
         {
             if (isGrounded && Time.time < bufferTime + bufferTimeLimit)
             {
                 bufferTime = 0f;
-                rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce);
+                canDoubleJump = true;
+                rigid.linearVelocity = new Vector2(rigid.linearVelocityX, jumpForce); // ***bufferJump
             }
         }
     }
     private void WallSlide()
     {
-        if (!isWalled || isGrounded || isWallJumping || rigid.linearVelocityY > 0f)
+        if (!isWallSliding || isGrounded || isWallJumping || rigid.linearVelocityY > 0f)
             return;
 
         float Y_slide = Y_input < 0f ? 1f : .5f;
@@ -155,7 +150,7 @@ public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
     }
     private void Move()
     {
-        if (isWallJumping || isWallSliding)
+        if (isWallJumping)
             return;
 
         if (isGrounded)
@@ -170,12 +165,12 @@ public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
     }
     private void Flip()
     {
-        if (rigid.linearVelocityX > 0.01f)
+        if (rigid.linearVelocityX > 0.1f)
         {
             facing = -1;
             transform.rotation = Quaternion.identity;
         }
-        else if (rigid.linearVelocityX < -0.01f)
+        else if (rigid.linearVelocityX < -0.1f)
         {
             facing = 1;
             transform.rotation = Quaternion.Euler(0f, 180f, 0f);
@@ -183,26 +178,18 @@ public class G_PlayerSimple : MonoBehaviour // ***** ต้นฉบับได้
     }
     private void GroundAndWallCheck()
     {
-        isGrounded = Physics2D.Raycast(transform.position, Vector2.down, groundDistCheck, groundLayer);
-        isWalled = Physics2D.Raycast(transform.position, transform.right, wallDistCheck, groundLayer);
+        isGrounded = Physics2D.Raycast(transform.position, Vector2.down, groundDistCheck, groundLayer); // sensor พื้น
+        isWalled = Physics2D.Raycast(transform.position, transform.right, wallDistCheck, groundLayer); // sensor ผนัง
     }
-    private void OnDrawGizmos()
+    private void OnDrawGizmos() // กราฟฟิกแสดงผลของ sensor ตรวจจับพื้นและผนัง
     {
-        Gizmos.color = Color.blue;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundDistCheck);
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(transform.position, transform.position + transform.right * wallDistCheck);
+        Gizmos.color = Color.blue; // เส้นสีน้ำเงิน
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * groundDistCheck); // เส้น sensor ตรวจพื้น
+        Gizmos.color = Color.red; // เส้นแดง
+        Gizmos.DrawLine(transform.position, transform.position + transform.right * wallDistCheck); // เส้น sensor ตรวจผนัง
     }
     private void Animation()
     {
-        anim.SetBool("isGrounded", isGrounded);
-        anim.SetBool("isWallSliding", isWallSliding);
 
-        if (!isWalled)
-            anim.SetFloat("velX", rigid.linearVelocityX);
-        else
-            anim.SetFloat("velX", 0f);
-
-        anim.SetFloat("velY", rigid.linearVelocityY);
     }
 }
